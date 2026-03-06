@@ -60,7 +60,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 
 const dadosFormulario = ref({
   nome: '',
@@ -68,7 +68,6 @@ const dadosFormulario = ref({
   curso: ''
 });
 
-// Objeto para guardar as mensagens de erro de cada campo
 const erros = ref({
     nome : '',
     email : '',
@@ -78,14 +77,17 @@ const erros = ref({
 const estaProcessando = ref(false);
 const mensagemSucesso = ref('')
 
-// Array simulando o que virá da API
-const listaCursos = ref([
-  { id: 1, nome: 'Introdução ao JavaScript' },
-  { id: 2, nome: 'Arquitetura de Software' },
-  { id: 3, nome: 'Design de Interfaces (UI/UX)' }
-]);
+onMounted(async () => {
+  try {
+    const resposta = await fetch('http://localhost:3000/cursos');
+    const cursos = await resposta.json();
 
-// Funções de validação
+    listaCursos.value = cursos;
+  } catch (erro) {
+    console.error('Erro ao buscar cursos do backend:', erro);
+  }
+});
+
 const validarNome = () => {
     if (dadosFormulario.value.nome.trim().length < 3) {
         erros.value.nome = 'O nome deve ter pelo menos 3 caracteres.';
@@ -95,7 +97,6 @@ const validarNome = () => {
 };
 
 const validarEmail = () => {
-    // Expressão regular para validação do email
     const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!regexEmail.test(dadosFormulario.value.email)) {
         erros.value.email = 'Por favor, insira um e-mail válido';
@@ -121,26 +122,46 @@ const formularioInvalido = computed(() => {
          dadosFormulario.value.curso === '';
 });
 
-// Função chamada quando o botão é clicado
-const enviarFormulario = () => {
-    validarNome();
-    validarEmail();
-    validarCurso();
+const submeterFormulario = async () => {
+  validarNome();
+  validarEmail();
+  validarCurso();
 
-    if (formularioInvalido.value) return;
-    
-    estaProcessando.value = true;
-    mensagemSucesso.value = '';
+  if (formularioInvalido.value) return;
 
-    setTimeout(() => {
-        console.log("Dados enviados para o servidor:", dadosFormulario.value);
+  estaProcessando.value = true
+  mensagemSucesso.value = '';
 
-        estaProcessando.value = false;
-        mensagemSucesso.value = 'Matrícula realizada com sucesso! (Simulação)'
+  try {
+    const resposta = await fetch('http://localhost:3000/matricula', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        nome: dadosFormulario.value.nome,
+        email: dadosFormulario.value.email,
+        curso: Number(dadosFormulario.value.curso)
+      })
+    });
 
-        dadosFormulario.value = { nome: '', email: '', curso: '' }
-    }, 2000);
-};
+    if (resposta.status === 201) {
+      const dadosRetorno = await resposta.json();
+      mensagemSucesso.value = dadosRetorno.mensagem;
+
+      dadosFormulario.value = { nome: '', email: '', curso: '' }; 
+    } else {
+      const dadosErro = await resposta.json();
+      alert('Erro do servidor: ' + dadosErro.erro);
+    }
+
+  } catch (erro) {
+    console.error('Erro ao enviar para a API:', erro);
+    alert('Erro de conexão. Verifique se o backend está rodando.');
+  } finally {
+    estaProcessando.value = false;
+  }
+}
 </script>
 
 <style scoped>
