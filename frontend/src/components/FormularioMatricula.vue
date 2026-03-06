@@ -122,7 +122,7 @@ const formularioInvalido = computed(() => {
          dadosFormulario.value.curso === '';
 });
 
-const submeterFormulario = async () => {
+const enviarFormulario = async () => {
   validarNome();
   validarEmail();
   validarCurso();
