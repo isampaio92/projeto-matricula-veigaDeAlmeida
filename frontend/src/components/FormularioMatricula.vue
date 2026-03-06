@@ -75,7 +75,8 @@ const erros = ref({
 });
 
 const estaProcessando = ref(false);
-const mensagemSucesso = ref('')
+const mensagemSucesso = ref('');
+const listaCursos = ref([]);
 
 onMounted(async () => {
   try {
